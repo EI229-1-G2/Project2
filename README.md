@@ -1,2 +1,2 @@
-# Project2_code
+# Project2
 the code of project2
