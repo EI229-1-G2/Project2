@@ -1,0 +1,11 @@
+fsl_lmem_cache.c:36:6:LMEM_EnableCodeCache	16	static
+fsl_lmem_cache.c:63:6:LMEM_CodeCacheInvalidateAll	16	static
+fsl_lmem_cache.c:88:6:LMEM_CodeCachePushAll	16	static
+fsl_lmem_cache.c:112:6:LMEM_CodeCacheClearAll	16	static
+fsl_lmem_cache.c:148:6:LMEM_CodeCacheInvalidateLine	24	static
+fsl_lmem_cache.c:186:6:LMEM_CodeCacheInvalidateMultiLines	32	static
+fsl_lmem_cache.c:218:6:LMEM_CodeCachePushLine	24	static
+fsl_lmem_cache.c:257:6:LMEM_CodeCachePushMultiLines	32	static
+fsl_lmem_cache.c:289:6:LMEM_CodeCacheClearLine	24	static
+fsl_lmem_cache.c:327:6:LMEM_CodeCacheClearMultiLines	32	static
+fsl_lmem_cache.c:369:10:LMEM_CodeCacheDemoteRegion	32	static

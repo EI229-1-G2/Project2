@@ -1,0 +1,11 @@
+fsl_cache.c:29:6:L1CACHE_EnableCodeCache	8	static
+fsl_cache.c:42:6:L1CACHE_DisableCodeCache	8	static
+fsl_cache.c:55:6:L1CACHE_InvalidateCodeCache	4	static
+fsl_cache.c:80:6:L1CACHE_InvalidateCodeCacheByRange	32	static
+fsl_cache.c:108:6:L1CACHE_CleanCodeCache	4	static
+fsl_cache.c:132:6:L1CACHE_CleanCodeCacheByRange	32	static
+fsl_cache.c:160:6:L1CACHE_CleanInvalidateCodeCache	4	static
+fsl_cache.c:185:6:L1CACHE_CleanInvalidateCodeCacheByRange	32	static
+fsl_cache.c:404:6:L1CACHE_InvalidateICacheByRange	24	static
+fsl_cache.c:439:6:L1CACHE_CleanDCacheByRange	24	static
+fsl_cache.c:474:6:L1CACHE_CleanInvalidateDCacheByRange	24	static

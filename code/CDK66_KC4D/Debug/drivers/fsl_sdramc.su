@@ -1,0 +1,7 @@
+fsl_clock.h:725:20:CLOCK_EnableClock	24	static
+fsl_clock.h:736:20:CLOCK_DisableClock	24	static
+fsl_sdramc.h:241:20:SDRAMC_EnableOperateValid	16	static
+fsl_sdramc.c:49:17:SDRAMC_GetInstance	24	static
+fsl_sdramc.c:98:6:SDRAMC_Init	32	static
+fsl_sdramc.c:140:6:SDRAMC_Deinit	16	static
+fsl_sdramc.c:169:6:SDRAMC_SendCommand	16	static

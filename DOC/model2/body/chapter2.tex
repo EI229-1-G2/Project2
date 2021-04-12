@@ -1,0 +1,49 @@
+\section{MMA7260QT芯片的工作原理}
+
+\subsection{MMA7260QT的简介}
+\par{MMA7260Q是一单芯片支持x，Y，z轴向的集成加速度传感器，其功能结构如下图示：}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=12cm]{figure/lab2.1.1.png}
+\caption{简化的加速度计功能框图} \label{fig:2.1.1}
+\end{figure}
+
+\par{MMA7260Q传感器是由重力g感测单元、震荡器、时钟信号发生器、CtoV转换器、积分放大滤波器、微调电路和温度补偿电路组成(如上图所示)。引脚较少，五输入三输出，且每根管 脚的功能和作用容易理解，因此使用起来很简单。输出的信号为模拟电压信号，因此可以直接与带有A／D转换模块的MCU／单片机相连接。}
+\par{MMA7260Q内建g-select电路。我们可以通过两个g-select引脚的逻辑输人来选择g值(如表1)。一般会通过MCU的I／O引脚去控制或驱动 g-select，使其处于高电平或是低电平。至于应用时如何确保最佳灵敏度状态，则可以通过观察MCU的状态，MCU在读取传感 器的时候出现满格状态，且持续一段时间，则MCU就必须设定 更大的g值范围来确定输出是否再次出现饱和。在不同应用时，也可以通过设定不同g值范围来得到最佳使用状况。使用过程中可以随时改变灵敏度。该特性很适合那些根据最优性能需要 不同灵敏度的场合。它还具有在正常操作状态下500uA、休眠状态下3uA的低耗电流，其操作电压很低，仅有2.2-3.6V，而且具有快速的上电响应时间（1ms），体眠模式的唤醒时间很快，仅为0.5ms，通过将有源低电平休眠模式管脚设为高电平，即可实现触发。休眠模式下的功耗很低，需要加速度计数据时，响应时间也很快。可应用在手持设备上。}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=14cm]{figure/lab2.1.2.png}
+\caption{MMA7260Q传感器量程选定} \label{fig:2.1.2}
+\end{figure}
+
+\par{MMA7260Q中采用电容式加速度传感器。由电容的物理特性，电容值的太小与电极板的面积太小成正比，与电极板的距离成反比。g感测单元就是利用电容的原理设计的。从芯片内部筒化功能摸块来看，g感测单元将所侦测的加速度变化量的信号送往。CtoV转换电路”，然后再送到积分放大滤波器进行处理，最后通过温度补偿处理后输出反映瞬时加速度值大小的模拟电压信号。}
+
+\subsection{MMA7260QT转接板引脚使用说明}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=5cm]{figure/lab2.1.3.png}
+\caption{MMA7260QT转接板引脚图} \label{fig:2.1.3}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=12cm]{figure/lab2.1.4.png}
+\caption{MMA7260QT转接板引脚说明} \label{fig:2.1.4}
+\end{figure}
+
+\subsection{MMA7260QT传感器图示}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=12cm]{figure/lab2.1.5.png}
+\caption{MMA7260QT传感器加速度对应方向} \label{fig:2.1.5}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=12cm]{figure/lab2.1.6.png}
+\caption{MMA7260QT传感器三轴加速度在不同状态下的输出电压} \label{fig:2.1.6}
+\end{figure}

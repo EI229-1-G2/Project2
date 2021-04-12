@@ -1,0 +1,178 @@
+\newpage
+\appendix
+\section{matlab代码与注释}
+
+\textcolor[rgb]{0.98,0.00,0.00}{\textbf{图像数据读取模块}}
+\begin{python}
+function images = loadMNISTImages(filename)
+%loadMNISTImages 返回一个大小为28x28x[number of MNIST images]包含MNIST原始图像的矩阵
+%使用fopen方法打开文件
+fp = fopen(filename, 'rb');
+%如果文件无法打开，执行assert方法进行报错
+assert(fp ~= -1, ['Could not open ', filename, '']);
+%以二进制的形式图取打开的文件，存储在magic当中
+magic = fread(fp, 1, 'int32', 0, 'ieee-be');
+assert(magic == 2051, ['Bad magic number in ', filename, '']);
+numImages = fread(fp, 1, 'int32', 0, 'ieee-be');
+numRows = fread(fp, 1, 'int32', 0, 'ieee-be');
+numCols = fread(fp, 1, 'int32', 0, 'ieee-be');
+images = fread(fp, inf, 'unsigned char');
+images = reshape(images, numCols, numRows, numImages);
+images = permute(images,[2 1 3]);
+fclose(fp);
+% 将图像转换为行向量
+images = reshape(images, size(images, 1) * size(images, 2), size(images, 3));
+% 将数据转换为[0,1]范围内的归一化双精度浮点数
+images = double(images) / 255;
+images = images';
+end
+\end{python}
+
+\textcolor[rgb]{0.98,0.00,0.00}{\textbf{标签数据读取模块}}
+\begin{python}
+function labels = loadMNISTLabels(filename)
+%loadMNISTLabels返回一个[number of MNIST images]x1矩阵包含MNIST图像的标签
+%通过文件操作来提取标签信息
+fp = fopen(filename, 'rb');
+assert(fp ~= -1, ['Could not open ', filename, '']);
+magic = fread(fp, 1, 'int32', 0, 'ieee-be');
+assert(magic == 2049, ['Bad magic number in ', filename, '']);
+numLabels = fread(fp, 1, 'int32', 0, 'ieee-be');
+labels = fread(fp, inf, 'unsigned char');
+assert(size(labels,1) == numLabels, 'Mismatch in label count');
+fclose(fp);
+end
+\end{python}
+
+\textcolor[rgb]{0.98,0.00,0.00}{\textbf{数据处理}}
+\begin{python}
+clear;clc;
+tic
+% 读取训练/测试集数据样本和标签
+train_image_set = loadMNISTImages('train-images');
+train_label_set = loadMNISTLabels('train-labels')
+test_image_set = loadMNISTImages('t10k-images');
+test_label_set = loadMNISTLabels('t10k-labels');
+% 取前train_number个数据作为训练小样，存在sample矩阵中，注意一行代表一个样例
+% train_image_samples是一个训练样本数量*784的矩阵，train_label_samples则是样本数量*1的矩阵
+train_number = 60000
+train_image_samples = train_image_set(1:train_number,:)
+train_label_samples = train_label_set(1:train_number,:)
+% 同样的，取前test_number个数据作为训练小样，存在sample矩阵中，注意一行代表一个样例，
+% test_image_samples是一个训练样本数量*784的矩阵，test_label_samples则是样本数量*1的矩阵
+test_number = 10000
+test_image_samples = test_image_set(1:test_number,:)
+test_label_samples = test_label_set(1:test_number,:)
+% 保存train_image_samples中的数据到train_image_samples.mat文件中，便于以后的读取
+save train_image_samples
+save train_label_samples
+save test_image_samples
+save test_label_samples
+load train_image_samples
+load train_label_samples
+load test_image_samples
+load test_label_samples
+%tr_feats和tr_label中分别存放着前100个训练数据的特征和标签
+tr_feats = train_image_samples
+tr_label = train_label_samples
+te_feats = test_image_samples
+te_label = test_label_samples
+\end{python}
+
+\textcolor[rgb]{0.98,0.00,0.00}{\textbf{模型选择}}
+\begin{python}
+%-t表示核的类型（1代表线性核，2代表多项式核，3代表sigmoid核，4代表自定义核） -c表示容忍参数 -d表示核函数的维度
+%-b代表概率估计（1代表SVR，默认0代表SVC）-g代表Gamma系数（默认为1/训练样本数量） 
+% ktrain2 = ones(10000,10000);
+% for i = 1:10000
+%  for j = 1:10000
+%  ktrain2(i,j) = sum(tr_feats(i,:).^2)^0.5 * sum(tr_feats(j,:).^2)^0.5;
+%  end
+% end
+% Ktrain2 = [(1:10000)',ktrain2];
+% model_precomputed2 = svmtrain(tr_label, Ktrain2, '-t 4');
+% classid = unique(te_label);
+% ktest2 = ones(10000,10000);
+% for i = 1:10000
+%  for j = 1:10000
+%  ktest2(i,j) = sum(te_feats(i,:).^2)^0.5 * sum(tr_feats(j,:).^2)^0.5;
+%  end
+% end
+% Ktest2 = [(1:10000)', ktest2];
+% [predictlabel, accuracy, dec_values] = svmpredict(te_label, Ktest2, model_precomputed2);
+svmstr = sprintf('-t 3 -d 5 -r 1 -g 0.0013 -c 200 -b 1');  
+%通过svmstrain函数来训练模型
+model = svmtrain(tr_label,tr_feats,svmstr);
+\end{python}
+
+\textcolor[rgb]{0.98,0.00,0.00}{\textbf{模型训练与测试}}
+\begin{python}
+%使用unique函数去重，将分类的类型（即0-9十类）存储至classid当中
+classid = unique(te_label);
+% 使用svmpredict函数对测试数据进行预测，并且将预测的结果存储在predictlabel数组中
+[predictlabel,accuracy,dec_values] = svmpredict(te_label,te_feats,model,'-b 1');
+for class = 0:9
+    %class = 0
+    %建立一个索引列表，把同属于class一类的样本索引存放在这个列表当中
+    index_lst = [];
+    for i = 1:length(te_label)
+        if te_label(i)==class
+           index_lst = [index_lst,i];
+        end
+    end
+    %用number变量存放属于class一类的样本总数
+    number = length(index_lst);
+\end{python}
+
+\textcolor[rgb]{0.98,0.00,0.00}{\textbf{数据分析与显示}}
+\begin{python}
+    %以下是可视化显示部分的代码，每个类别随机选择三张 
+    N = 3;
+    for i = 1:N
+        %使用randi(sup)函数产生1<=x<=sup的随机整数
+        %以下代码从属于该class的数中随机抽取一个，获得它在测试集中的索引值，记为randnum
+        randnum = index_lst(randi(number));
+        %通过所以的方法读出这个随机抽取的样本在模型计算后得到的结果标签
+        result_number= predictlabel(randnum);
+        %把行向量1*784的行向量转换成28*28的矩阵
+        image = reshape(te_feats(randnum,:),28,28);
+        %构造标题字符串，用来可视化显示识别结果的时候作为注解
+        title_string = '识别结果：';
+        %通过num2str函数把数字转换成字符串，用于后面标题字符串的构造
+        result_string = num2str(result_number);
+        %通过subplot方法来在一张大图中画出多个子图显示多张图片及其显示结果
+        subplot(5,2*N,N*class+i);imshow(image,'InitialMagnification','fit');title(strcat(title_string,result_string));
+        hold on;
+    end
+end
+% 以下代码计算识别的准确率
+% 将测试集中的标签通过sort方法进行排序
+t_label = sort(te_label);
+%使用unique方法去重后在用hist方法统计每个类各有多少样本
+te_count = hist(t_label,unique(t_label));
+%用pre_count存放每个类正确判断了多少个样本
+pre_count = te_count;
+%遍历测试集数据，如果模型判断错误，则对应的样本正确数减1
+for i = 1:size(te_feats,1)    
+    if te_label(i) ~= predictlabel(i)
+        pre_count(te_label(i)+1) = pre_count(te_label(i)+1)-1;
+    end
+end
+%遍历种类，依次打印每一类的判断正确率
+for i = 1:length(classid)
+    fprintf('Classifying for Digit :  %i \n', classid(i));
+    fprintf('accuracy on %i : %.2f%% (%i/%i) \n',classid(i),pre_count(i)*100/te_count(i),pre_count(i),te_count(i));
+end
+toc
+\end{python}
+
+
+\lstset{language=Matlab}
+
+\begin{lstlisting}
+% Plot function f(x) = 2*x^3 - x - 2
+ezplot('2*x^3-x-2',[0, 2])
+hold on
+plot([0,2],[0,0],'r')
+\end{lstlisting}
+

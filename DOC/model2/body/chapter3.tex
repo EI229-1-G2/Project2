@@ -1,0 +1,134 @@
+\section{程序开发及配置工具使用}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=16cm]{figure/4.1.1.png}
+\label{fig:4.1.1}
+\end{figure}
+
+\subsection{程序实现}
+\par{首先在程序中已经给出了CDK66\_Analog\_Input(\&AnalogIn)函数，即不断更新MMA7260三轴加速度传感器信号的输入，这样就可以保证我们得到的值为即时的。}
+\par{之后我们再用AnalogIn类中的定义，对x，y，z方向的加速度进行全局变量定义，即}
+
+\begin{lstlisting}[language = C++]
+MemsX = AnalogIn.x;
+MemsY = AnalogIn.y;
+MemsZ = AnalogIn.z;
+\end{lstlisting}
+
+\par{这样就能把三轴方向上的加速度提取出来，通过OLED屏幕上的显示我们可知，当OLED屏幕朝上水平放置时，MemsX≈2000，MemsY≈1960，MemsZ≈3100（当OLED屏幕朝前或朝左时，MemsX或MemsY分别为3100左右，另外两个均为2000左右。故可知当MemsZ=3100时可说明板子水平放置。这一判断方法是由其重力加速度决定的：MemsX、Y、Z原本数值应均为2000左右，但水平放置时Z轴方向存在重力加速度，故MemsZ数值为3100，说明重力加速度带来的数值影响约1000左右），我们在代码中将加速度调零，即
+}
+
+\begin{lstlisting}[language = C++]
+int absX = MemsX-2000,absY = MemsY-1960,absZ = MemsZ-2000;
+\end{lstlisting}
+
+
+\par{在这里我们可以看见将三轴加速度调整至0左右后，我们便能进行总加速度的公式求解}
+
+\begin{lstlisting}[language = C++]
+sqrt(absX*absX+absY*absY+absZ*absZ);
+\end{lstlisting}
+
+\par{由于板子静止放置时受到的板与加速度传感器的相对（重力）加速度带来的数值影响为1000左右；当实验板水平的自由落体时，板与加速度传感器的相对加速度为0，即原在Z轴方向存在的重力加速度也将消失，故MemsZ趋向于0（当实验板沿其它方向自由落体时也是同样的道理），则总加速度会骤降，我们可以利用骤降后的数值来判断实验板是在水平下降：}
+
+\begin{lstlisting}[language = C++]
+sqrt(absX*absX+absY*absY+absZ*absZ)<500;
+\end{lstlisting}
+
+\par{这里当总加速度小于500时即说明实验板是在做“跌落”。（这里采用的是当总加速度小于500时判断其为跌落，是因为我们在进行加速度调零时并不是十分准确的，故总加速度在自由落体时的数值肯定大于0，但数值也较小，故可用小于500来判断）。}
+\par{同理我们可以分析，当实验板发生“冲击”时，其总加速度应该很大，在结合FreeMaster判断数值后，我们小组认为总加速度在大于1800时可以满足我们的要求，既不会特别敏感，也不会识别不出来是发生了“冲击”，故判断条件为}
+
+\begin{lstlisting}[language = C++]
+sqrt(absX*absX+absY*absY+absZ*absZ)>1800;
+\end{lstlisting}
+
+\par{而在实验要求中，我们需要通过蜂鸣器来判断是否发生“跌落”和“冲击”，即我们可以在判断语句后加上BEEP\_ON()来进行提示，同时当其“跌落”时将在数码管上显示1，当其发生“冲击”时将在数码管上显示2，这一功能通过调用ShowNumDEC()即可实现。综上，判断以及提示过程代码为}
+
+\begin{lstlisting}[language = C++]
+if (sqrt(absX*absX+absY*absY+absZ*absZ)<500){
+    BEEP_ON();
+    ShowNumDEC(1);
+}
+else if (sqrt(absX*absX+absY*absY+absZ*absZ)>1800){
+    BEEP_ON();
+    ShowNumDEC(2);
+}
+else {
+	BEEP_OFF();
+}
+
+\end{lstlisting}
+
+\par{综上，本次实验的代码实现部分为：}
+
+\begin{lstlisting}[language = C++]
+CDK66_Analog_Input(&AnalogIn);		// Update all analog inputs
+MemsX = AnalogIn.x;
+MemsY = AnalogIn.y;
+MemsZ = AnalogIn.z;
+int absX = MemsX-2000,absY = MemsY-1960,absZ = MemsZ-2000;
+if (sqrt(absX*absX+absY*absY+absZ*absZ)<500){
+    BEEP_ON();
+    ShowNumDEC(1);
+}
+else if (sqrt(absX*absX+absY*absY+absZ*absZ)>1800){
+    BEEP_ON();
+    ShowNumDEC(2);
+}
+else {
+	BEEP_OFF();
+}
+
+\end{lstlisting}
+
+
+\subsection{配置工具的使用}
+\par{在本次的Lab实验当中，除了照常的利用了MCUXpresso进行对应的程序编程之外，还在非常大的程度上利用了FreeMASTER进行一个数据的可视化的处理。在这次的CDK66\_KC4D工程文件里面，我们主要是对其相对三方向的加速度进行分析，而通过FreeMASTER，XYZ就可以很好的表现出来了。下面是此次实验FreeMASTER的使用流程。}
+\par{（注意：在导入FreeMASTER之前，必须要将MCU中的程序成功烧录到单片机当中，并且在点击“继续”按钮之后维持运行一段时间，之后停止程序。在上述操作进行完之后，再进行FreeMASTER的操作才能正常继续。}
+\\
+\par{1）单片机的连接}
+
+\begin{figure}[htbp]
+\centering
+
+\subfigure{
+\begin{minipage}[t]{0.4\linewidth}
+\centering
+\includegraphics[height=4cm]{figure/3.1.1.1.png}
+\end{minipage}%
+}%
+\subfigure{
+\begin{minipage}[t]{0.4\linewidth}
+\centering
+\includegraphics[height=4cm]{figure/3.1.1.2.png}
+\end{minipage}%
+}%
+
+\centering
+\caption{单片机接口连接窗口}\label{fig:3.1.1}
+\end{figure}
+
+\par{2）导入所需变量}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=5cm]{figure/3.1.2.png}
+\caption{变量导入窗口} \label{fig:3.1.2}
+\end{figure}
+
+\par{3）创建示波器}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=8cm]{figure/3.1.3.png}
+\caption{示波器窗口} \label{fig:3.1.3}
+\end{figure}
+
+\par{4）生成动态图像}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=12cm]{figure/3.1.4.png}
+\caption{最终生成的示波器图像} \label{fig:3.1.4}
+\end{figure}
