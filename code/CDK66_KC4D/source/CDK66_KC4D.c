@@ -918,16 +918,27 @@ int main(void) {
     	    OLED_P8x16Str(0,3,"Operate QES1....");
             break;
     	case 5U:
+    		delay1ms(5);
     		CDK66_Analog_Input(&AnalogIn);
-    		IR1 = 0.99*IR1+0.01*AnalogIn.IRV1;
-    		IR2 = 0.99*IR2+0.01*AnalogIn.IRV2;
+    		IR1 = 0.9*IR1+0.1*AnalogIn.IRV1;
+    		IR2 = 0.9*IR2+0.1*AnalogIn.IRV2;
 
     		IRread = (IR1-IR2)/(IR1+IR2);
 
-    		tempInt = IRread*3200+550;
+    		tempInt = -IRread*800+1500;
     		Update_ServoUS(kFTM_Chnl_0, tempInt);
     		Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
     		break;
+    	case 6U:
+    		delay1ms(5);
+    		CDK66_Analog_Input(&AnalogIn);
+            H1=AnalogIn.HALL1;
+            H2=AnalogIn.HALL2;
+            tempint =tempInt;
+            tempInt=(H1-H2)+1200;
+            Update_ServoUS(kFTM_Chnl_0, tempInt);
+            Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
+            break;
     	case 8U:
             RTC_GetDatetime(RTC, &appDateTime);
             sprintf (OLEDLine1, "Date: %04hd-%02hd-%02hd", appDateTime.year, appDateTime.month, appDateTime.day);
@@ -978,12 +989,6 @@ int main(void) {
                     {
                     sprintf (OLEDLine2, "x:%04hd  Mg1:%04hd", AnalogIn.x, AnalogIn.HALL1);
                     sprintf (OLEDLine3, "y:%04hd  Mg2:%04hd", AnalogIn.y, AnalogIn.HALL2);
-                    H1=AnalogIn.HALL1;
-                    H2=AnalogIn.HALL2;
-                    tempint =tempInt;
-                    tempInt=(H1-H2)+1200;
-                    Update_ServoUS(kFTM_Chnl_0, tempInt);
-                    Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
                     }
                 //sprintf (OLEDLine4, "z:%04hd  ct:%04hd", AnalogIn.z, AnalogIn.TEMP);
                 sprintf (OLEDLine4, "z:%04hd  ct:%4.1fC", AnalogIn.z, ICTemp);
