@@ -935,9 +935,13 @@ int main(void) {
             H1 = 0.9*H1+0.1*AnalogIn.HALL1;
             H2 = 0.9*H2+0.1*AnalogIn.HALL2;
             //tempint = tempInt;
-            tempInt = 3000*(H1-H2)/(H1+H2)+1500;
+            tempInt = 3000*(H2-H1)/(H1+H2)+1500;
+
+            testCode = abs(H2-H1);
+            BOARD_I2C_GPIO(testCode);
             Update_ServoUS(kFTM_Chnl_0, tempInt);
             Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
+
             break;
     	case 8U:
             RTC_GetDatetime(RTC, &appDateTime);
