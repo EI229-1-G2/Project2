@@ -87,7 +87,9 @@ static uint8_t DSPTable[] = { 0x40, 0x79, 0x24, 0x30, 0x19, 0x12, 0x02, 0x78, 0x
 volatile static uint32_t appTick;		// tick at an interval of 5ms
 volatile static uint32_t appTick2;		// tick at an interval of 5ms
 volatile static uint32_t QESVar = 100;		// Variable controlled by QES
-volatile static int IRread = 0;
+volatile static float IRread = 0;
+volatile static float IR1 = 0;
+volatile static float IR2 = 0;
 
 // USB debug port: UART0
 uint8_t UsbRingBuffer[USB_RING_BUFFER_SIZE];
@@ -895,6 +897,7 @@ int main(void) {
 //            	//else tempInt = 2300;
 //            	else CountDir = 1;	// toggle CountDir on lower limit
 //        	}
+
         	if (!QESP()) QESVar = 100;
         	tempInt = QESVar*8+550;
         	Update_ServoUS(kFTM_Chnl_0, tempInt);
@@ -909,6 +912,15 @@ int main(void) {
             ShowNumDEC(QESVar);
     	    OLED_P8x16Str(0,3,"Operate QES1....");
             break;
+    	case 5U:
+    		CDK66_Analog_Input(&AnalogIn);
+    		//if (AnalogIn.IRV1>10&&AnalogIn.IRV2>10){
+    			IR1 = 0.998*IR1+0.002*AnalogIn.IRV1;
+    			IR2 = 0.998*IR2+0.002*AnalogIn.IRV2;
+    		//}
+
+    		IRread = (IR1-IR2)/(IR1+IR2);
+    		break;
     	case 8U:
             RTC_GetDatetime(RTC, &appDateTime);
             sprintf (OLEDLine1, "Date: %04hd-%02hd-%02hd", appDateTime.year, appDateTime.month, appDateTime.day);
@@ -954,7 +966,6 @@ int main(void) {
                 {
                     sprintf (OLEDLine2, "x:%04hd  IR1:%04hd", AnalogIn.x, AnalogIn.IRV1);
                     sprintf (OLEDLine3, "y:%04hd  IR2:%04hd", AnalogIn.y, AnalogIn.IRV2);
-                    IRread = log(abs(AnalogIn.IRV1-AnalogIn.IRV2)+1);
                 }
                 else
                 {
