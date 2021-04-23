@@ -90,11 +90,11 @@ volatile static uint32_t QESVar = 0;		// Variable controlled by QES
 volatile static float IRread = 0;
 volatile static float IR1 = 0;
 volatile static float IR2 = 0;
-volatile static uint32_t H1;
+volatile static float H1 = 0;
 
-volatile static uint32_t H2;
+volatile static float H2 = 0;
 
-volatile static uint32_t tempint;
+//volatile static uint32_t tempint;
 
 // USB debug port: UART0
 uint8_t UsbRingBuffer[USB_RING_BUFFER_SIZE];
@@ -930,12 +930,12 @@ int main(void) {
     		Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
     		break;
     	case 6U:
-    		delay1ms(5);
+    		delay1ms(10);
     		CDK66_Analog_Input(&AnalogIn);
-            H1=AnalogIn.HALL1;
-            H2=AnalogIn.HALL2;
-            tempint =tempInt;
-            tempInt=(H1-H2)+1200;
+            H1 = 0.9*H1+0.1*AnalogIn.HALL1;
+            H2 = 0.9*H2+0.1*AnalogIn.HALL2;
+            //tempint = tempInt;
+            tempInt = 3000*(H1-H2)/(H1+H2)+1500;
             Update_ServoUS(kFTM_Chnl_0, tempInt);
             Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
             break;
