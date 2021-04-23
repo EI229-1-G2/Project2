@@ -919,12 +919,14 @@ int main(void) {
             break;
     	case 5U:
     		CDK66_Analog_Input(&AnalogIn);
-    		//if (AnalogIn.IRV1>10&&AnalogIn.IRV2>10){
-    			IR1 = 0.998*IR1+0.002*AnalogIn.IRV1;
-    			IR2 = 0.998*IR2+0.002*AnalogIn.IRV2;
-    		//}
+    		IR1 = 0.99*IR1+0.01*AnalogIn.IRV1;
+    		IR2 = 0.99*IR2+0.01*AnalogIn.IRV2;
 
     		IRread = (IR1-IR2)/(IR1+IR2);
+
+    		tempInt = IRread*3200+550;
+    		Update_ServoUS(kFTM_Chnl_0, tempInt);
+    		Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
     		break;
     	case 8U:
             RTC_GetDatetime(RTC, &appDateTime);
