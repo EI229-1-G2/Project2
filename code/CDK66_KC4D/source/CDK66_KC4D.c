@@ -86,10 +86,15 @@ typedef struct _Board_Analog
 static uint8_t DSPTable[] = { 0x40, 0x79, 0x24, 0x30, 0x19, 0x12, 0x02, 0x78, 0x00, 0x10, 0x08, 0x03, 0x27, 0x21, 0x06, 0x0E };
 volatile static uint32_t appTick;		// tick at an interval of 5ms
 volatile static uint32_t appTick2;		// tick at an interval of 5ms
-volatile static uint32_t QESVar = 100;		// Variable controlled by QES
+volatile static uint32_t QESVar = 0;		// Variable controlled by QES
 volatile static float IRread = 0;
 volatile static float IR1 = 0;
 volatile static float IR2 = 0;
+volatile static uint32_t H1;
+
+volatile static uint32_t H2;
+
+volatile static uint32_t tempint;
 
 // USB debug port: UART0
 uint8_t UsbRingBuffer[USB_RING_BUFFER_SIZE];
@@ -962,16 +967,22 @@ int main(void) {
     			ICTemp = 25 - ((ICTemp - .716)/1.62);
 
                 sprintf (OLEDLine1, "Vbat:%4.2fV", VBat);
-                if (KEY1())
-                {
-                    sprintf (OLEDLine2, "x:%04hd  IR1:%04hd", AnalogIn.x, AnalogIn.IRV1);
-                    sprintf (OLEDLine3, "y:%04hd  IR2:%04hd", AnalogIn.y, AnalogIn.IRV2);
-                }
+                if (!KEY1())
+                    {
+                     sprintf (OLEDLine2, "x:%04hd  IR1:%04hd", AnalogIn.x, AnalogIn.IRV1);
+                                    sprintf (OLEDLine3, "y:%04hd  IR2:%04hd", AnalogIn.y, AnalogIn.IRV2);
+                    }
                 else
-                {
+                    {
                     sprintf (OLEDLine2, "x:%04hd  Mg1:%04hd", AnalogIn.x, AnalogIn.HALL1);
                     sprintf (OLEDLine3, "y:%04hd  Mg2:%04hd", AnalogIn.y, AnalogIn.HALL2);
-                }
+                    H1=AnalogIn.HALL1;
+                    H2=AnalogIn.HALL2;
+                    tempint =tempInt;
+                    tempInt=(H1-H2)+1200;
+                    Update_ServoUS(kFTM_Chnl_0, tempInt);
+                    Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
+                    }
                 //sprintf (OLEDLine4, "z:%04hd  ct:%04hd", AnalogIn.z, AnalogIn.TEMP);
                 sprintf (OLEDLine4, "z:%04hd  ct:%4.1fC", AnalogIn.z, ICTemp);
 
