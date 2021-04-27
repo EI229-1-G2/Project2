@@ -978,8 +978,27 @@ int main(void) {
             //tempint = tempInt;
             tempInt = 3000*(H2-H1)/(H1+H2)+1500;
 
-            testCode = abs(H2-H1);
+            uint16_t a,b;
+            a=(tempInt/100)-7;
+            b=pow(2,a);
+            testCode=b;
             BOARD_I2C_GPIO(testCode);
+
+            if((H1+H2)>5000)
+            {
+             sprintf (OLEDLine4, "strong_MT:%04hd",   AnalogIn.HALL1+ AnalogIn.HALL2);
+            }
+            else if((H1+H2)<30)
+            {
+             sprintf (OLEDLine4, "feeble_MT:%04hd",  AnalogIn.HALL1+ AnalogIn.HALL2);
+            }
+            else
+            {
+             sprintf (OLEDLine4, "normal_MT %04hd",  AnalogIn.HALL1+ AnalogIn.HALL2);
+            }
+
+            OLED_P8x16Str(0,6,(uint8_t *)OLEDLine4);
+
             Update_ServoUS(kFTM_Chnl_0, tempInt);
             Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
 
