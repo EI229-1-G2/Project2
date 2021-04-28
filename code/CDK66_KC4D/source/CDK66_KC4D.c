@@ -926,8 +926,49 @@ int main(void) {
     		IRread = (IR1-IR2)/(IR1+IR2);
 
     		tempInt = -IRread*800+1500;
+
+			 VBat = ((float)AnalogIn.VSENSE)/4096.0*3.3*5;
+			 sprintf (OLEDLine2, "x:%04hd  IR1:%04hd", AnalogIn.x, AnalogIn.IRV1);
+			 sprintf (OLEDLine3, "y:%04hd  IR2:%04hd", AnalogIn.y, AnalogIn.IRV2);
+			 sprintf (OLEDLine1, "VBat:%4.2fV", VBat);
+			 OLED_P8x16Str(0,0,(uint8_t *)OLEDLine1);
+			 OLED_P8x16Str(0,2,(uint8_t *)OLEDLine2);
+			 OLED_P8x16Str(0,4,(uint8_t *)OLEDLine3);
+
+
+                if((IR1+IR2)>300)
+                {
+                	sprintf (OLEDLine4, "strong_Lt:%04hd",   AnalogIn.IRV1+ AnalogIn.IRV2);
+                }
+                else if((IR1+IR2)<30)
+                {
+                	sprintf (OLEDLine4, "feeble_Lt:%04hd",  AnalogIn.IRV1+ AnalogIn.IRV2);
+                }
+                else
+                {
+                	sprintf (OLEDLine4, "normal_Lt %04hd",  AnalogIn.IRV1+ AnalogIn.IRV2);
+                }
+
+        	    OLED_P8x16Str(0,6,(uint8_t *)OLEDLine4);
+
+            //ShowNumDEC(tempInt);
+            uint16_t a,b;
+            a=(tempInt/100)-7;
+            b=pow(2,a);
+            testCode=b;
+            BOARD_I2C_GPIO(testCode);
+
+
+
+
+
     		Update_ServoUS(kFTM_Chnl_0, tempInt);
     		Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
+
+
+
+
+
     		break;
     	case 6U:
     		delay1ms(10);
@@ -1003,7 +1044,7 @@ int main(void) {
     			ICTemp = 25 - ((ICTemp - .716)/1.62);
 
                 sprintf (OLEDLine1, "Vbat:%4.2fV", VBat);
-                if (!KEY1())
+                if (KEY1())
                     {
                      sprintf (OLEDLine2, "x:%04hd  IR1:%04hd", AnalogIn.x, AnalogIn.IRV1);
                                     sprintf (OLEDLine3, "y:%04hd  IR2:%04hd", AnalogIn.y, AnalogIn.IRV2);
