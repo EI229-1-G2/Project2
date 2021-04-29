@@ -1,0 +1,20 @@
+This is XeTeX, Version 3.14159265-2.6-0.999992 (MiKTeX 20.12) (preloaded format=xelatex 2020.12.18)  29 APR 2021 16:18
+entering extended mode
+**./chapter2.tex
+(chapter2.tex
+LaTeX2e <2020-10-01> patch level 2
+L3 programming layer <2020-12-07> xparse <2020-03-03>
+! Undefined control sequence.
+l.1 \section
+            {霍尔传感器概述及信号特点}
+? x
+ 
+Here is how much of TeX's memory you used:
+ 16 strings out of 412095
+ 309 string characters out of 2854252
+ 279525 words of memory out of 3000000
+ 19729 multiletter control sequences out of 15000+200000
+ 403430 words of font info for 27 fonts, out of 3000000 for 9000
+ 1348 hyphenation exceptions out of 8191
+ 13i,0n,15p,68b,10s stack positions out of 5000i,500n,10000p,200000b,50000s
+No pages of output.
