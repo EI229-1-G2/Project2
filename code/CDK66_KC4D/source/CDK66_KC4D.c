@@ -221,8 +221,8 @@ void DCAM_IRQHANDLER(void) {
 	  GPIO_PortClearInterruptFlags(GPIOB, BOARD_INITPINS_QESa_GPIO_PIN_MASK);
 	  delay();
 	  if (!QESA()) return;
-	  if (!QESB() && QESVar<200) QESVar++;
-	  else if (QESVar > 0) QESVar--;
+	  if (!QESB() && QESVar<20) QESVar++;
+	  else if (QESVar > -20) QESVar--;
 	  return;
   }
 
@@ -716,9 +716,9 @@ void Get_01_Value(uint8_t mode)
 	else
 	{
 		Threshold = GetOTSU(Image_Use);	//大津法阈值
-		Threshold = (uint8_t)(Threshold*0.5)+70;
+		Threshold = (uint8_t)(Threshold*0.5)+300+QESVar*10;
 	}
-	sprintf(txt,"%03d", Threshold);
+	sprintf(txt,"%03d", 0);
 	OLED_P6x8Str(80, 1, (uint8_t *)txt);
 
 	for (i=0; i<60; i++)
@@ -958,16 +958,8 @@ int main(void) {
             testCode=b;
             BOARD_I2C_GPIO(testCode);
 
-
-
-
-
     		Update_ServoUS(kFTM_Chnl_0, tempInt);
     		Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
-
-
-
-
 
     		break;
     	case 6U:
@@ -978,7 +970,7 @@ int main(void) {
             //tempint = tempInt;
             tempInt = 3000*(H2-H1)/(H1+H2)+1500;
 
-            uint16_t a,b;
+            //uint16_t a,b;
             a=(tempInt/100)-7;
             b=pow(2,a);
             testCode=b;
