@@ -103,6 +103,8 @@ volatile uint16_t txIndexUSB;	/* Index of the debug port data to send out. */
 volatile uint16_t rxIndexUSB;	/* Index of the memory to save new arrived debug port data. */
 
 uint16_t CCDData[128];	// Linear CCD raw data
+uint16_t CCDDataGaus[128];
+uint8_t CCD2PC[260];	// data to be sent to PC
 uint16_t CCDDataToDraw[128], CCDDataToClear[128];	// Linear CCD data to OLED
 uint8_t Image_Data[120][188];	// MT9V034 DMA data receiver ROW*COL: 120*188
 uint8_t Image_Use[60][94];	// resized CAM data to fit OLED
@@ -339,15 +341,15 @@ void LinearCameraOneShot(void)
     CCD_CLK_LOW;
 }
 
-void Draw_LinearView(void)
+void Draw_LinearView(uint16_t* Data)
 {
     uint8_t index=0, tempData;
     uint8_t i=0, j=0, k=0;
 
     for(index=0; index<128; index++)
 	{
-    	i = 7 - (CCDData[index]>>6)/8;
-    	j = 7- (CCDData[index]>>6)%8;
+    	i = 7 - (Data[index]>>6)/8;
+    	j = 7- (Data[index]>>6)%8;
     	for (k=0; k<8; k++)
     	{
     		OLED_Set_Pos(index, k);
@@ -716,9 +718,9 @@ void Get_01_Value(uint8_t mode)
 	else
 	{
 		Threshold = GetOTSU(Image_Use);	//大津法阈值
-		Threshold = (uint8_t)(Threshold*0.5)+300+QESVar*10;
+		Threshold = (uint8_t)(Threshold*0.5)+70;
 	}
-	sprintf(txt,"%03d", 0);
+	sprintf(txt,"%03d", Threshold);
 	OLED_P6x8Str(80, 1, (uint8_t *)txt);
 
 	for (i=0; i<60; i++)
@@ -771,6 +773,70 @@ void SendImage(void)
 	UART_WriteBlocking(UART0_PERIPHERAL, (uint8_t *)Image_Data, 22560U);
 }
 
+void CCDGaus(){
+	uint16_t CCDTemp[134]={0};
+	for (int i = 3;i < 131;i++){
+		CCDTemp[i] = CCDData[i-2];
+	}
+	for (int i = 0;i < 128;i++){
+		CCDDataGaus[i]=0.4*CCDTemp[i+3];
+		CCDDataGaus[i]+=0.14*(CCDTemp[i+2]+CCDTemp[i+4]);
+		CCDDataGaus[i]+=0.09*(CCDTemp[i+1]+CCDTemp[i+5]);
+		CCDDataGaus[i]+=0.07*(CCDTemp[i]+CCDTemp[i+6]);
+	}
+}
+
+void SendCCDData(uint16_t* Data){
+	//send 128 points CCD data (128*2byte) to UART0, using seekfree protocol
+	for(int i=0; i<128; i++)
+	{
+		CCD2PC[i*2+4] = Data[i] >> 8;	// Upper byte
+	    CCD2PC[i*2+5] = Data[i] & 0XFF;	// Lower byte
+	}
+	UART_WriteBlocking(UART0_PERIPHERAL, CCD2PC, 260U);
+}
+
+void Get_01_Value_CCD(uint16_t* Data){
+	float averange=0;
+	for (int i = 0;i<128;i++){
+		averange += Data[i]/128.0f;
+	}
+	for (int i = 0;i<128;i++){
+		if (Data[i]<0.4*averange)
+			Data[i]=1;
+		else
+			Data[i]=0;
+	}
+}
+
+void LDC(){
+	for(int i = 0;i<128;i++){
+		CCDData[i]=CCDData[i]/exp(-pow(i-64,2)/1800);
+	}
+}
+
+uint8_t FindMidLine(){
+	uint8_t left=0,right=128;
+	for (int i = 5; i<115;i++){
+		if (CCDDataGaus[i]^CCDDataGaus[i+1]){
+			left = i;
+			break;
+		}
+	}
+	for(int i=122;i>0;i--){
+		if (CCDDataGaus[i]^CCDDataGaus[i-1]){
+			right = i;
+			break;
+		}
+	}
+
+	char txt[16];
+	sprintf(txt,"l:%03d r:%03d", left, right);
+	OLED_P6x8Str(10, 1, (uint8_t *)txt);
+
+	return (left+right)/2;
+}
+
 /*
  * @brief   Application entry point.
  */
@@ -784,7 +850,6 @@ int main(void) {
 	uint32_t tempInt = 0;
 	uint16_t testCode = 0;
 	uint8_t index = 0;
-	uint8_t CCD2PC[260];	// data to be sent to PC
 	Board_Analog_t AnalogIn;
 
 	uint8_t TaskID = 0;		// loop switch
@@ -844,21 +909,31 @@ int main(void) {
     	switch(TaskID)
     	{
     	case 1U:		// using TSL1401
-        	//delay1ms(20);
+        	delay1ms(10);
         	//CollectCCD();
         	LinearCameraOneShot();
+        	LDC();
+        	CCDGaus();
+        	Get_01_Value_CCD(CCDDataGaus);
         	// draw linear CCD 128 pixel on OLED
-    		Draw_LinearView();
+    		Draw_LinearView(CCDDataGaus);
     		if (!KEY1())		// Key S1 pressed down?
     		{
-    	    	//send 128 points CCD data (128*2byte) to UART0, using seekfree protocol
-    			for(tempInt=0; tempInt<128; tempInt++)
-    			{
-    				CCD2PC[tempInt*2+4] = CCDData[tempInt] >> 8;	// Upper byte
-    				CCD2PC[tempInt*2+5] = CCDData[tempInt] & 0XFF;	// Lower byte
-    			}
-    			UART_WriteBlocking(UART0_PERIPHERAL, CCD2PC, 260U);
+    			SendCCDData(CCDDataGaus);
     		}
+    		if (!KEY2()){
+    			SendCCDData(CCDData);
+    		}
+
+    		uint8_t mid = FindMidLine();
+    		tempInt = mid*10+850;
+
+    		char txt[16];
+    		sprintf(txt,"m:%03d", mid);
+    		OLED_P6x8Str(80, 1, (uint8_t *)txt);
+
+    		Update_ServoUS(kFTM_Chnl_0, tempInt);
+    		Update_ServoUS(kFTM_Chnl_1, 3000-tempInt);
     		LED1_TOGGLE();
     		break;
     	case 2U:		// using MT9V034
@@ -952,10 +1027,10 @@ int main(void) {
         	    OLED_P8x16Str(0,6,(uint8_t *)OLEDLine4);
 
             //ShowNumDEC(tempInt);
-            uint16_t a,b;
-            a=(tempInt/100)-7;
-            b=pow(2,a);
-            testCode=b;
+            uint16_t a1,b1;
+            a1=(tempInt/100)-7;
+            b1=pow(2,a1);
+            testCode=b1;
             BOARD_I2C_GPIO(testCode);
 
     		Update_ServoUS(kFTM_Chnl_0, tempInt);
@@ -970,10 +1045,10 @@ int main(void) {
             //tempint = tempInt;
             tempInt = 3000*(H2-H1)/(H1+H2)+1500;
 
-            //uint16_t a,b;
-            a=(tempInt/100)-7;
-            b=pow(2,a);
-            testCode=b;
+            uint16_t a2,b2;
+            a2=(tempInt/100)-7;
+            b2=pow(2,a2);
+            testCode=b2;
             BOARD_I2C_GPIO(testCode);
 
             if((H1+H2)>5000)
