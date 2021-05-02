@@ -773,6 +773,7 @@ void SendImage(void)
 	UART_WriteBlocking(UART0_PERIPHERAL, (uint8_t *)Image_Data, 22560U);
 }
 
+//高斯滤波，减小噪声
 void CCDGaus(){
 	uint16_t CCDTemp[134]={0};
 	for (int i = 3;i < 131;i++){
@@ -796,6 +797,7 @@ void SendCCDData(uint16_t* Data){
 	UART_WriteBlocking(UART0_PERIPHERAL, CCD2PC, 260U);
 }
 
+//求均值，认定小于0.4均值为道路线
 void Get_01_Value_CCD(uint16_t* Data){
 	float averange=0;
 	for (int i = 0;i<128;i++){
@@ -809,21 +811,22 @@ void Get_01_Value_CCD(uint16_t* Data){
 	}
 }
 
+//镜头矫正，不矫正的话对着全白视图会呈现正态分布的波形（因为镜头的扭曲）
 void LDC(){
 	for(int i = 0;i<128;i++){
-		CCDData[i]=CCDData[i]/exp(-pow(i-64,2)/1800);
+		CCDData[i]=CCDData[i]/exp(-pow(i-64,2)/1800);//正态分布方差需要调整，电脑屏幕1800左右，一般室内光3600左右
 	}
 }
 
 uint8_t FindMidLine(){
 	uint8_t left=0,right=128;
-	for (int i = 5; i<115;i++){
+	for (int i = 5; i<115;i++){//从左往右找第一个从0到1的分界点（左边界）
 		if (CCDDataGaus[i]^CCDDataGaus[i+1]){
 			left = i;
 			break;
 		}
 	}
-	for(int i=122;i>0;i--){
+	for(int i=122;i>0;i--){//从右往左找
 		if (CCDDataGaus[i]^CCDDataGaus[i-1]){
 			right = i;
 			break;
@@ -834,7 +837,7 @@ uint8_t FindMidLine(){
 	sprintf(txt,"l:%03d r:%03d", left, right);
 	OLED_P6x8Str(10, 1, (uint8_t *)txt);
 
-	return (left+right)/2;
+	return (left+right)/2;//取均值返回道路中点
 }
 
 /*
@@ -912,20 +915,23 @@ int main(void) {
         	delay1ms(10);
         	//CollectCCD();
         	LinearCameraOneShot();
-        	LDC();
-        	CCDGaus();
-        	Get_01_Value_CCD(CCDDataGaus);
+
+        	LDC();//镜头矫正
+        	CCDGaus();//高斯滤波
+
+        	Get_01_Value_CCD(CCDDataGaus);//将括号中波形按均值二分成0和1
+
         	// draw linear CCD 128 pixel on OLED
     		Draw_LinearView(CCDDataGaus);
     		if (!KEY1())		// Key S1 pressed down?
     		{
-    			SendCCDData(CCDDataGaus);
+    			SendCCDData(CCDDataGaus);//向串口发送滤波后的波形
     		}
     		if (!KEY2()){
-    			SendCCDData(CCDData);
+    			SendCCDData(CCDData);//发送原始波形
     		}
 
-    		uint8_t mid = FindMidLine();
+    		uint8_t mid = FindMidLine();//找道路线左右边界
     		tempInt = mid*10+850;
 
     		char txt[16];
