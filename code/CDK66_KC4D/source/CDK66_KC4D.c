@@ -93,6 +93,7 @@ volatile static float IR2 = 0;
 volatile static float H1 = 0;
 
 volatile static float H2 = 0;
+volatile static float my_average=0;
 
 //volatile static uint32_t tempint;
 
@@ -303,6 +304,24 @@ void LinearCameraFlush(void)
     }
 }
 
+//求均值，认定小于0.4均值为道路线
+void Get_01_Value_CCD(uint16_t* Data){
+
+	float average=0;
+	for (int i = 0;i<128;i++){
+		average += Data[i]/128.0f;
+	}
+
+	for (int i = 0;i<128;i++){
+		if (Data[i]<0.4*average)
+			Data[i]=1;
+		else
+			Data[i]=0;
+	}
+	my_average=abs(average);
+
+}
+
 void LinearCameraOneShot(void)
 {
     uint8_t index=0;
@@ -310,7 +329,10 @@ void LinearCameraOneShot(void)
     // flush previously integrated frame before capturing new frame
     LinearCameraFlush();
     // wait for TSL1401 to integrate new frame, exposure time control by delay
-    delay1ms(10);
+    uint16_t exposureTime=10;
+    exposureTime=-my_average/150+15;
+    delay1ms(exposureTime);
+
 
     CCD_SI_HIGH;
     CCD_delay();
@@ -797,19 +819,7 @@ void SendCCDData(uint16_t* Data){
 	UART_WriteBlocking(UART0_PERIPHERAL, CCD2PC, 260U);
 }
 
-//求均值，认定小于0.4均值为道路线
-void Get_01_Value_CCD(uint16_t* Data){
-	float averange=0;
-	for (int i = 0;i<128;i++){
-		averange += Data[i]/128.0f;
-	}
-	for (int i = 0;i<128;i++){
-		if (Data[i]<0.4*averange)
-			Data[i]=1;
-		else
-			Data[i]=0;
-	}
-}
+
 
 //镜头矫正，不矫正的话对着全白视图会呈现正态分布的波形（因为镜头的扭曲）
 void LDC(){
@@ -913,6 +923,7 @@ int main(void) {
     	{
     	case 1U:		// using TSL1401
         	delay1ms(10);
+
         	//CollectCCD();
         	LinearCameraOneShot();
 
