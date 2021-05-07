@@ -86,7 +86,7 @@ typedef struct _Board_Analog
 static uint8_t DSPTable[] = { 0x40, 0x79, 0x24, 0x30, 0x19, 0x12, 0x02, 0x78, 0x00, 0x10, 0x08, 0x03, 0x27, 0x21, 0x06, 0x0E };
 volatile static uint32_t appTick;		// tick at an interval of 5ms
 volatile static uint32_t appTick2;		// tick at an interval of 5ms
-volatile static uint32_t QESVar = 0;		// Variable controlled by QES
+volatile static int32_t QESVar = 0;		// Variable controlled by QES
 volatile static float IRread = 0;
 volatile static float IR1 = 0;
 volatile static float IR2 = 0;
@@ -314,7 +314,7 @@ void Get_01_Value_CCD(uint16_t* Data){
 
 	for (int i = 0;i<128;i++){
 		if (Data[i]<0.4*average)
-			Data[i]=1;
+			Data[i]=256;
 		else
 			Data[i]=0;
 	}
@@ -370,16 +370,8 @@ void Draw_LinearView(uint16_t* Data)
 
     for(index=0; index<128; index++)
 	{
-    	if(Data[index]==0)
-    	{
-        	i = 7 - (Data[index]>>6)/8;
-        	j = 7- (Data[index]>>6)%8;
-    	}
-    	else
-    	{
-    		i = 7 - ((Data[index]+2000)>>6)/8;
-    		j = 7- ((Data[index]+2000)>>6)%8;
-    	}
+        i = 7 - ((Data[index]*4)>>6)/8;
+        j = 7- ((Data[index]*4)>>6)%8;
     	for (k=0; k<8; k++)
     	{
     		OLED_Set_Pos(index, k);
@@ -833,7 +825,7 @@ void SendCCDData(uint16_t* Data){
 //镜头矫正，不矫正的话对着全白视图会呈现正态分布的波形（因为镜头的扭曲）
 void LDC(){
 	for(int i = 0;i<128;i++){
-		CCDData[i]=CCDData[i]/exp(-pow(i-64,2)/1800);//正态分布方差需要调整，电脑屏幕1800左右，一般室内光3600左右
+		CCDData[i]=CCDData[i]/exp(-pow(i-64,2)/(3000+QESVar*100));//正态分布方差需要调整，电脑屏幕1800左右，一般室内光3600左右
 	}
 }
 
@@ -941,14 +933,17 @@ int main(void) {
 
         	Get_01_Value_CCD(CCDDataGaus);//将括号中波形按均值二分成0和1
 
-        	// draw linear CCD 128 pixel on OLED
-    		Draw_LinearView(CCDDataGaus);
     		if (!KEY1())		// Key S1 pressed down?
     		{
     			SendCCDData(CCDDataGaus);//向串口发送滤波后的波形
     		}
     		if (!KEY2()){
     			SendCCDData(CCDData);//发送原始波形
+    			Draw_LinearView(CCDData);
+    		}
+    		else{
+    			// draw linear CCD 128 pixel on OLED
+    			Draw_LinearView(CCDDataGaus);
     		}
 
     		uint8_t mid = FindMidLine();//找道路线左右边界
