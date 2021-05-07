@@ -330,7 +330,7 @@ void LinearCameraOneShot(void)
     LinearCameraFlush();
     // wait for TSL1401 to integrate new frame, exposure time control by delay
     uint16_t exposureTime=10;
-    exposureTime=-my_average/150+15;
+    exposureTime=-my_average+15;
     delay1ms(exposureTime);
 
 
@@ -370,8 +370,16 @@ void Draw_LinearView(uint16_t* Data)
 
     for(index=0; index<128; index++)
 	{
-    	i = 7 - (Data[index]>>6)/8;
-    	j = 7- (Data[index]>>6)%8;
+    	if(Data[index]==0)
+    	{
+        	i = 7 - (Data[index]>>6)/8;
+        	j = 7- (Data[index]>>6)%8;
+    	}
+    	else
+    	{
+    		i = 7 - ((Data[index]+2000)>>6)/8;
+    		j = 7- ((Data[index]+2000)>>6)%8;
+    	}
     	for (k=0; k<8; k++)
     	{
     		OLED_Set_Pos(index, k);
@@ -387,6 +395,7 @@ void Draw_LinearView(uint16_t* Data)
     	}
 	}
 }
+
 
 /*	failed to use OLED_ClrPixel and OLED_PutPixel
  *  code for reference
@@ -944,6 +953,11 @@ int main(void) {
 
     		uint8_t mid = FindMidLine();//找道路线左右边界
     		tempInt = mid*10+850;
+
+    		  uint16_t showmid;
+    		  showmid=pow(2,16-mid/8);
+    		  testCode=showmid;
+    		  BOARD_I2C_GPIO(testCode);
 
     		char txt[16];
     		sprintf(txt,"m:%03d", mid);
